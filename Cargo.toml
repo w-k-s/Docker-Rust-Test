@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["Waqqas Sheikh <waqqas.abdulkareem@gmail.com>"]
 
 [dependencies]
-nickel = "*"
+nickel = "0.9.0"
