@@ -1,16 +1,18 @@
 #[macro_use] extern crate nickel;
+extern crate mustache;
 
-use nickel::Nickel;
+use std::collections::HashMap;
+use nickel::{Nickel, HttpRouter, StaticFilesHandler, Mount};
 
 fn main() {
     let mut server = Nickel::new();
 
-    server.utilize(router! {
-        get "**" => |_req, _res| {
-            "Hello Rust!"
-        }
+    server.get("/", middleware! { |_, response|
+    	let mut data : HashMap<String,String> = HashMap::new();
+    	return response.render("templates/login.tpl", &data);
     });
 
-    server.listen("0.0.0.0:8080");
+	server.utilize(Mount::new("/static/",StaticFilesHandler::new("static/")));
+    server.listen("127.0.0.1:8080");
 }
 
