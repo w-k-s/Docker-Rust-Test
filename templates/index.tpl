@@ -15,6 +15,18 @@
 			  <fieldset>
 			    <legend>Sign up</legend>
 			    <div class="form-group">
+			      <label for="inputFirstName" class="col-lg-2 control-label">First Name</label>
+			      <div class="col-lg-8">
+			        <input type="text" class="form-control" id="inputFirstName" placeholder="First Name" name="first_name">
+			      </div>
+			    </div>
+			    <div class="form-group">
+			      <label for="inputLastName" class="col-lg-2 control-label">Last Name</label>
+			      <div class="col-lg-8">
+			        <input type="text" class="form-control" id="inputLastName" placeholder="Last Name" name="last_name">
+			      </div>
+			    </div>
+			    <div class="form-group">
 			      <label for="inputEmail" class="col-lg-2 control-label">Email</label>
 			      <div class="col-lg-8">
 			        <input type="text" class="form-control" id="inputEmail" placeholder="Email" name="email">
@@ -38,6 +50,9 @@
 			    </div>
 			  </fieldset>
 			</form>
+			{{# has_error}}
+				<p class="text-danger">{{error}}</p>
+			{{/ has_error}}
 			<div class="col-lg-10">
 			<button type="submit" class="col-lg-5 btn btn-primary">Submit</button>
 			<button type="submit" class="col-lg-5 btn btn-primary">Submit</button>
