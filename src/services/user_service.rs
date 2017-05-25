@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use mysql;
 use mysql::{Pool,QueryResult};
 use mysql::error::{Error,MySqlError};
 
@@ -40,13 +41,27 @@ impl UserService{
 	    return Ok(qr.affected_rows() == 1 )
 	}
 
-	/*pub fn login(&self, username: &str, password: &str)->Result<User,String>{
-		let mut stmt = self.pool.prepare(r"SELECT * FROM users WHERE username = :username AND password = :password").unwrap();
-		let qr = stmt.execute(params!{
+	pub fn login(&self, username: &str, password: &str)->Result<User,String>{
+		let mut stmt = self.pool.prepare(r"SELECT id,username,first_name,last_name,email,is_active,is_staff FROM users WHERE username = :username AND password = :password").unwrap();
+		let myres = stmt.execute(params!{
 			"username" => username,
 			"password" => password,
-		}).map(|err|){
-			return format!("{}",err);
-		};
-	}*/
+		}).map_err(|err|{
+			return format!("{:?}",err);
+		});
+	
+		myres.ok()
+		//MyResult<QqueryResult> -ok()-> Optional<QueryResult> -(next)-> Optional<MyResult<Row>> -(unwrap)-> MyResult<Row> -(ok)-> Row
+		/*let (id,username,first_name,last_name,email,is_active,is_staff) = mysql::from_row(myres.ok().unwrap().next().unwrap().ok().unwrap());
+		Ok(User{
+				id: id,
+				username: username,
+				password: None,
+				first_name: first_name,
+				last_name: last_name,
+				email: email,
+				is_active: is_active,
+				is_staff: is_staff,
+			})*/
+	}
 }

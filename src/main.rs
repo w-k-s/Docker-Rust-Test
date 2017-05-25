@@ -94,7 +94,7 @@ fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -
             id: 0,
             username: (*values.get("email").unwrap()).to_owned(), 
             email: (*values.get("email").unwrap()).to_owned(),
-            password: (*values.get("password").unwrap()).to_owned(),
+            password: Some((*values.get("password").unwrap()).to_owned()),
             first_name: (*values.get("first_name").unwrap()).to_owned(),
             last_name: (*values.get("last_name").unwrap()).to_owned(),
             is_active: true,
@@ -109,7 +109,6 @@ fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -
         }
     };
 
-    
     let user_service = UserService::new(app_config.pool.clone());
     let success = match user_service.register(&user){
         Ok(success) => success,
