@@ -1,13 +1,14 @@
 #[macro_use] extern crate nickel;
 extern crate mustache;
 extern crate rustc_serialize;
+extern crate mysql;
 
 use std::path::Path;
 use std::collections::HashMap;
 use mustache::{Data,MapBuilder};
 use nickel::{Nickel, HttpRouter, StaticFilesHandler, Mount, Request, Response, MiddlewareResult};
 
-extern crate mysql;
+use mysql::{Pool,error};
 
 #[derive(Debug, PartialEq, Eq)]
 struct User{
@@ -21,26 +22,26 @@ struct User{
     is_staff: bool,
 }
 
-struct AppConfiguration{
+struct AppConfig{
     db_string : String,
     host: String,
     port: String,
 }
 
-impl AppConfiguration{
+impl AppConfig{
     pub fn listen_string(&self) -> String{
        format!("{}:{}",self.host,self.port)
     }
 }
 
 fn main() {
-    let config = AppConfiguration{
+    let config = AppConfig{
         db_string: "mysql://root:password@localhost:3307/surveys".to_owned(),
         host: "127.0.0.1".to_owned(),
         port: "8080".to_owned(),
     };
-
-    let mut server = Nickel::new();
+    let listen_addr = config.listen_string();
+    let mut server = Nickel::with_data(config);
 
     server.get("/", middleware! { |_, mut response|
     	let mut data : HashMap<String,String> = HashMap::new();
@@ -50,32 +51,34 @@ fn main() {
     server.post("/register",register);
 
 	server.utilize(Mount::new("/static/",StaticFilesHandler::new("static/")));
-    server.listen(config.listen_string());
+    server.listen(listen_addr);
 }
 
-fn register<'a>(_: &mut Request, mut res: Response<'a>) -> MiddlewareResult<'a> {
-    //connect to database
-    /*let conn = Connection::connect("postgres://root:root@localhost/json-test", &SslMode::None).unwrap();
-    let blog = Blog {
-        id: 0,
-        content: "My second blogpost".to_string(),
-        author: "Mike".to_string(),
-        datepost: "".to_string()
-    };
-    // insert data in DB
-    conn.execute("INSERT INTO blogs (content, author) VALUES ($1, $2)",
-    &[&blog.content, &blog.author]).unwrap();
-    */
+fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
+    //close connection after post request
+    res.headers_mut().set_raw("Connection",vec![b"close".to_vec()]);
+
     #[derive(RustcEncodable)]
     struct ViewModel {
         has_error: bool,
-        error: &'static str,
+        error: String,
     }
+
+    let app_config =  req.server_data();
+    let pool = match(Pool::new(&*app_config.db_string)){
+        Ok(pool) => pool,
+        Err(x) => {
+            let data = ViewModel {
+                has_error: true,
+                error: format!("{}",x),
+            };
+            return res.render("templates/index.tpl", &data);
+        }
+    };
 
     let data = ViewModel {
         has_error: true,
-        error: "Registration is unavailable" 
+        error: "Database connected successfully".to_owned(),
     };
-    res.headers_mut().set_raw("Connection",vec![b"close".to_vec()]);
-    return res.render("templates/index.tpl", &data);
+    return res.render("templates/index.tpl", &data);    
 }
