@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::path::Path;
 use std::collections::HashMap;
 use mustache::{Data,MapBuilder};
-use nickel::{Nickel, HttpRouter, StaticFilesHandler, Mount, Request, Response, MiddlewareResult,FormBody};
+use nickel::{Nickel, HttpRouter, StaticFilesHandler, Mount, Request, Response, MiddlewareResult,FormBody, Params};
 use mysql::{Pool};
 
 use models::user::{User};
@@ -56,6 +56,26 @@ fn main() {
     server.listen(listen_addr);
 }
 
+fn get<'a>(p : &'a Params, keys: Vec<&'a str>)->Result<HashMap<&'a str,&'a str>,Vec<&'a str>>{
+    
+    let mut provided_values : HashMap<&str,&str> = HashMap::new();
+    let mut missing_keys = vec![];
+    let mut missing : bool = false;
+    for key in keys {
+        match p.get(key){
+            Some(value) if value.len() > 0 =>{ 
+                provided_values.insert(key,value);
+            },
+            _ => {
+                missing = true;
+                missing_keys.push(key);
+            }
+        };
+    }
+
+    if missing { Err(missing_keys) }else{ Ok(provided_values) }
+}
+
 fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
     //close connection after post request
     res.headers_mut().set_raw("Connection",vec![b"close".to_vec()]);
@@ -69,16 +89,26 @@ fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -
     let app_config =  req.server_data();
     let params = req.form_body().unwrap();
 
-    let user = User{
-        id: 0,
-        username: params.get("email").unwrap().to_owned(), 
-        email: params.get("email").unwrap().to_owned(),
-        password: params.get("password").unwrap().to_owned(),
-        first_name: params.get("first_name").unwrap().to_owned(),
-        last_name: params.get("last_name").unwrap().to_owned(),
-        is_active: true,
-        is_staff: false,
+    let user = match get(params,vec!["email","password","first_name","last_name"]){
+        Ok(values) => User{
+            id: 0,
+            username: (*values.get("email").unwrap()).to_owned(), 
+            email: (*values.get("email").unwrap()).to_owned(),
+            password: (*values.get("password").unwrap()).to_owned(),
+            first_name: (*values.get("first_name").unwrap()).to_owned(),
+            last_name: (*values.get("last_name").unwrap()).to_owned(),
+            is_active: true,
+            is_staff: false,
+        },
+        Err(missing) =>{
+            let data = ViewModel{
+                has_error: true,
+                error: format!("Missing: {:?}",missing),
+            };
+            return res.render("templates/index.tpl", &data);
+        }
     };
+
     
     let user_service = UserService::new(app_config.pool.clone());
     let success = match user_service.register(&user){

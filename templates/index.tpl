@@ -51,12 +51,10 @@
 			  </fieldset>
 			</form>
 			{{# has_error}}
-				<p class="text-danger">{{error}}</p>
-			{{/ has_error}}
 			<div class="col-lg-10">
-			<button type="submit" class="col-lg-5 btn btn-primary">Submit</button>
-			<button type="submit" class="col-lg-5 btn btn-primary">Submit</button>
+				<p class="text-danger">{{error}}</p>
 			</div>
+			{{/ has_error}}
 		</div>
   	</div>
   </div>

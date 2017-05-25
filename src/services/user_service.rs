@@ -39,4 +39,14 @@ impl UserService{
 
 	    return Ok(qr.affected_rows() == 1 )
 	}
+
+	/*pub fn login(&self, username: &str, password: &str)->Result<User,String>{
+		let mut stmt = self.pool.prepare(r"SELECT * FROM users WHERE username = :username AND password = :password").unwrap();
+		let qr = stmt.execute(params!{
+			"username" => username,
+			"password" => password,
+		}).map(|err|){
+			return format!("{}",err);
+		};
+	}*/
 }

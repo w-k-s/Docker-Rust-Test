@@ -1,9 +1,15 @@
 Survey Website
 
-1. Home page
-- Add a sign-up form with sign-up with google and sign-up with facebook
-- Add switch between production and staging
+1. Index
+[-] CSS For Sign-up form
+[-] Sign-up
+[ ] Implement Login
+[ ] CSS For login form
+[ ] Form Validation
+[ ] UserServiceError
+[ ] CSS Front Page
 
+2. Home
 
 To run on docker:
 
