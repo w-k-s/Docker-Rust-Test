@@ -20,7 +20,7 @@
     {{/signed_in}}
     {{^signed_in}}
     <!--<a href="login" class="nav-link">Sign-in</a><span class="nav-item"> or </span><a href="/register" class="nav-link">Sign-up</a>-->
-     <form class="navbar-form navbar-right" style="display:inline-block">
+     <form class="navbar-form navbar-right" style="display:inline-block" method="post" action="/login" name="login">
         <div class="form-group" style="display:inline-block">
           <div style="color:white">Username</div>
           <input type="text" name="username" class="form-control" placeholder="Username">

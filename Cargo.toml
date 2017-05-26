@@ -9,3 +9,8 @@ nickel = "0.9.0"
 mustache = "0.8.0"
 rustc-serialize = "0.3.24"
 frank_jwt = "2.5.1"
+cookie = "0.8.1"
+
+[dependencies.nickel_cookies]
+version = "0.2.0"
+default-features = false

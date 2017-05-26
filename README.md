@@ -6,14 +6,17 @@ Survey Website
 [-] Implement Login
 [-] Generate JWT Token
 [-] Assign Login Token to User in DB
-[ ] Set Token in cookie
+[-] Set Token in cookie
 [ ] Verify token
 [-] CSS For login form
-[ ] Form Validation
+[ ] Form Validation in JS
 [ ] UserServiceError
 [-] CSS Front Page
 
-2. Home
+2. Test on Docker
+3. Use Command Line Arguments to supply environment variables
+4. Create Makefile to switch between local,docker,publish etc
+
 
 To run on docker:
 

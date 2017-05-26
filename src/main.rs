@@ -6,6 +6,7 @@ mod models;
 extern crate mustache;
 extern crate rustc_serialize;
 extern crate frank_jwt;
+extern crate cookie;
 
 use std::sync::Arc;
 use std::path::Path;
@@ -174,10 +175,12 @@ fn login<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> M
         }
     };
 
+    let cookies = vec!(format!("c_user={}",user.token.unwrap()).as_bytes().to_vec());
+    res.headers_mut().set_raw("Set-Cookie",cookies);
 
     let data = ViewModel {
         has_error: true,
-        error: format!("{:?}",user),
+        error: format!("Signed in as {} {}",user.first_name,user.last_name),
     };
     
     return res.render("templates/index.tpl", &data);    
