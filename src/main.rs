@@ -5,6 +5,7 @@ mod models;
 
 extern crate mustache;
 extern crate rustc_serialize;
+extern crate frank_jwt;
 
 use std::sync::Arc;
 use std::path::Path;
@@ -51,6 +52,7 @@ fn main() {
     });
 
     server.post("/register",register);
+    server.post("/login",login);
 
 	server.utilize(Mount::new("/static/",StaticFilesHandler::new("static/")));
     server.listen(listen_addr);
@@ -99,6 +101,7 @@ fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -
             last_name: (*values.get("last_name").unwrap()).to_owned(),
             is_active: true,
             is_staff: false,
+            token: None,
         },
         Err(missing) =>{
             let data = ViewModel{
@@ -125,6 +128,56 @@ fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -
     let data = ViewModel {
         has_error: true,
         error: if success { "Registration Successful ".to_owned() }else{ "Registration Failed".to_owned() },
+    };
+    
+    return res.render("templates/index.tpl", &data);    
+}
+
+fn login<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
+    //close connection after post request
+    res.headers_mut().set_raw("Connection",vec![b"close".to_vec()]);
+
+    #[derive(RustcEncodable)]
+    struct ViewModel {
+        has_error: bool,
+        error: String,
+    }
+
+    let app_config =  req.server_data();
+    let params = req.form_body().unwrap();
+
+    let mut username  = String::new();
+    let mut password  = String::new();
+    match get(params,vec!["username","password"]){
+        Ok(values) => {
+            username = (*values.get("username").unwrap()).to_owned();
+            password = (*values.get("password").unwrap()).to_owned();
+        },
+        Err(missing) =>{
+            let data = ViewModel{
+                has_error: true,
+                error: format!("Missing: {:?}",missing),
+            };
+            return res.render("templates/index.tpl", &data);
+        }
+    };
+
+    let user_service = UserService::new(app_config.pool.clone());
+    let user = match user_service.login(&username,&password){
+        Ok(user) => user,
+        Err(message) => {
+            let data = ViewModel{
+                has_error: true,
+                error: message,
+            };
+            return res.render("templates/index.tpl", &data);
+        }
+    };
+
+
+    let data = ViewModel {
+        has_error: true,
+        error: format!("{:?}",user),
     };
     
     return res.render("templates/index.tpl", &data);    

@@ -16,7 +16,12 @@
         <a class="nav-link" href="#">About</a>
       </li>
     </ul>
-    <a href="login" class="nav-link">Sign-in</a><span class="nav-item"> or </span><a href="/register" class="nav-link">Sign-up</a>
-    
+    {{#signed_in}}
+      <p>Signed-in</p>
+    {{/signed_in}}
+    {{^signed_in}}
+    <!--<a href="login" class="nav-link">Sign-in</a><span class="nav-item"> or </span><a href="/register" class="nav-link">Sign-up</a>-->
+    <form method="post" action="/login"><input type="text" name="username"/><input type="password" name="password"/><input type="submit" value="submit"></form>
+    {{/signed_in}}
   </div>
 </nav>

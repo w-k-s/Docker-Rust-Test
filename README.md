@@ -3,7 +3,11 @@ Survey Website
 1. Index
 [-] CSS For Sign-up form
 [-] Sign-up
-[ ] Implement Login
+[-] Implement Login
+[ ] Generate JWT Token
+[ ] Assign Login Token to User in DB
+[ ] Set Token in cookie
+[ ] Verify token
 [ ] CSS For login form
 [ ] Form Validation
 [ ] UserServiceError

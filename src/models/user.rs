@@ -9,4 +9,5 @@ pub struct User{
     pub email: String,
     pub is_active: bool,
     pub is_staff: bool,
+    pub token: Option<String>,
 }
