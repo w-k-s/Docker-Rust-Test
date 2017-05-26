@@ -9,9 +9,7 @@ extern crate frank_jwt;
 extern crate cookie;
 
 use std::sync::Arc;
-use std::path::Path;
 use std::collections::HashMap;
-use mustache::{Data,MapBuilder};
 use nickel::{Nickel, HttpRouter, StaticFilesHandler, Mount, Request, Response, MiddlewareResult,FormBody, Params};
 use mysql::{Pool};
 
@@ -48,7 +46,7 @@ fn main() {
     let mut server = Nickel::with_data(config);
 
     server.get("/", middleware! { |_, mut response|
-    	let mut data : HashMap<String,String> = HashMap::new();
+    	let data : HashMap<String,String> = HashMap::new();
     	return response.render("templates/index.tpl", &data);
     });
 
@@ -147,13 +145,10 @@ fn login<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> M
     let app_config =  req.server_data();
     let params = req.form_body().unwrap();
 
-    let mut username  = String::new();
-    let mut password  = String::new();
-    match get(params,vec!["username","password"]){
-        Ok(values) => {
-            username = (*values.get("username").unwrap()).to_owned();
-            password = (*values.get("password").unwrap()).to_owned();
-        },
+    let (username,password) : (String,String)= match get(params,vec!["username","password"]){
+        Ok(values) => (
+            (*values.get("username").unwrap()).to_owned(), 
+            (*values.get("password").unwrap()).to_owned()),
         Err(missing) =>{
             let data = ViewModel{
                 has_error: true,
