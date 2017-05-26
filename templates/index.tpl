@@ -3,6 +3,7 @@
 <head>
 	<title>{{> title}}</title>
 	<link rel="stylesheet" href="static/bootstrap.min.css"></link>
+	<link rel="stylesheet" href="static/main.css"></link>
 </head>
 <body>
 {{> nav}}
