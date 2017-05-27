@@ -7,7 +7,7 @@ Survey Website
 [-] Generate JWT Token
 [-] Assign Login Token to User in DB
 [-] Set Token in cookie
-[ ] Verify token
+[-] Verify token
 [-] CSS For login form
 [ ] Form Validation in JS
 [ ] UserServiceError

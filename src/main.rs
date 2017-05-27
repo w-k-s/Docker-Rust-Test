@@ -2,16 +2,19 @@ mod services;
 mod models;
 #[macro_use] extern crate nickel;
 #[macro_use] extern crate mysql;
+extern crate nickel_cookies;
+extern crate cookie;
 
 extern crate mustache;
 extern crate rustc_serialize;
 extern crate frank_jwt;
-extern crate cookie;
 
 use std::sync::Arc;
 use std::collections::HashMap;
 use nickel::{Nickel, HttpRouter, StaticFilesHandler, Mount, Request, Response, MiddlewareResult,FormBody, Params};
 use mysql::{Pool};
+use cookie::{Cookie,CookieJar};
+use nickel_cookies::Cookies;
 
 use models::user::{User};
 
@@ -45,11 +48,7 @@ fn main() {
     let listen_addr = config.listen_string();
     let mut server = Nickel::with_data(config);
 
-    server.get("/", middleware! { |_, mut response|
-    	let data : HashMap<String,String> = HashMap::new();
-    	return response.render("templates/index.tpl", &data);
-    });
-
+    server.get("/",index);
     server.post("/register",register);
     server.post("/login",login);
 
@@ -57,24 +56,22 @@ fn main() {
     server.listen(listen_addr);
 }
 
-fn get<'a>(p : &'a Params, keys: Vec<&'a str>)->Result<HashMap<&'a str,&'a str>,Vec<&'a str>>{
+fn index<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
     
-    let mut provided_values : HashMap<&str,&str> = HashMap::new();
-    let mut missing_keys = vec![];
-    let mut missing : bool = false;
-    for key in keys {
-        match p.get(key){
-            Some(value) if value.len() > 0 =>{ 
-                provided_values.insert(key,value);
-            },
-            _ => {
-                missing = true;
-                missing_keys.push(key);
-            }
-        };
+    #[derive(RustcEncodable)]
+    struct ViewModel {
+        signed_in: bool,
     }
 
-    if missing { Err(missing_keys) }else{ Ok(provided_values) }
+    let app_config =  req.server_data();
+    let user_service = UserService::new(app_config.pool.clone());
+
+    let user = req.cookies().find("PrivateUserIdentity").map(|c| c.value).map(|token| user_service.user_with_token(&token));//(|c| c.value).and_then(|token| user_service.user_with_token(&token));
+    
+    let data = ViewModel{
+        signed_in: user.is_some(),
+    };
+    return res.render("templates/index.tpl", &data);
 }
 
 fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
@@ -138,6 +135,7 @@ fn login<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> M
 
     #[derive(RustcEncodable)]
     struct ViewModel {
+        signed_in: bool,
         has_error: bool,
         error: String,
     }
@@ -151,6 +149,7 @@ fn login<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> M
             (*values.get("password").unwrap()).to_owned()),
         Err(missing) =>{
             let data = ViewModel{
+                signed_in: false,
                 has_error: true,
                 error: format!("Missing: {:?}",missing),
             };
@@ -163,6 +162,7 @@ fn login<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> M
         Ok(user) => user,
         Err(message) => {
             let data = ViewModel{
+                signed_in: false,
                 has_error: true,
                 error: message,
             };
@@ -170,13 +170,42 @@ fn login<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> M
         }
     };
 
-    let cookies = vec!(format!("c_user={}",user.token.unwrap()).as_bytes().to_vec());
-    res.headers_mut().set_raw("Set-Cookie",cookies);
+    //let cookies = vec!(format!("c_user={}",user.token.unwrap()).as_bytes().to_vec());
+    //res.headers_mut().set_raw("Set-Cookie",cookies);
+    {
+        let jar = res.cookies_mut().permanent();
+        let token = user.token.unwrap();
+        let cookie = Cookie::new("PrivateUserIdentity".to_owned(),
+                                 token);
+        jar.add(cookie);
+    }
+        
 
     let data = ViewModel {
+        signed_in: true,
         has_error: true,
         error: format!("Signed in as {} {}",user.first_name,user.last_name),
     };
     
     return res.render("templates/index.tpl", &data);    
+}
+
+fn get<'a>(p : &'a Params, keys: Vec<&'a str>)->Result<HashMap<&'a str,&'a str>,Vec<&'a str>>{
+    
+    let mut provided_values : HashMap<&str,&str> = HashMap::new();
+    let mut missing_keys = vec![];
+    let mut missing : bool = false;
+    for key in keys {
+        match p.get(key){
+            Some(value) if value.len() > 0 =>{ 
+                provided_values.insert(key,value);
+            },
+            _ => {
+                missing = true;
+                missing_keys.push(key);
+            }
+        };
+    }
+
+    if missing { Err(missing_keys) }else{ Ok(provided_values) }
 }
