@@ -9,13 +9,13 @@ Survey Website
 [-] Set Token in cookie
 [-] Verify token
 [-] CSS For login form
-[ ] Form Validation in JS
+[-] Form Validation in JS
 [-] UserServiceError
 [-] CSS Front Page
 
 [2]. Test on Docker
 [3]. Create Makefile to switch between local,docker,publish etc
-[4]. Use Command Line Arguments to supply environment variables
+4. Use Command Line Arguments to supply environment variables
 
 5. Home Page
 

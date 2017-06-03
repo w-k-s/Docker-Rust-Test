@@ -1,3 +1,8 @@
+<script>
+    $(document).ready(function(){
+      $('#loginForm').validate();
+    });
+</script>
 <nav class="navbar navbar-toggleable-md navbar-inverse bg-inverse">
   <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
@@ -19,15 +24,14 @@
       <p>Signed-in</p>
     {{/signed_in}}
     {{^signed_in}}
-    <!--<a href="login" class="nav-link">Sign-in</a><span class="nav-item"> or </span><a href="/register" class="nav-link">Sign-up</a>-->
-     <form class="navbar-form navbar-right" style="display:inline-block" method="post" action="/login" name="login">
+     <form id="loginForm" class="navbar-form navbar-right" style="display:inline-block" method="post" action="/login" name="login">
         <div class="form-group" style="display:inline-block">
           <div style="color:white">Username</div>
-          <input type="text" name="username" class="form-control" placeholder="Username">
+          <input name="username" class="form-control" placeholder="Username" minlength="2" maxlength="100" type="email" required>
         </div>
         <div class="form-group" style="display:inline-block" >
           <div style="color:white">Password</div>
-          <input type="password" name="password" class="form-control" placeholder="Password">
+          <input type="password" name="password" class="form-control" placeholder="Password" required minlength="2" maxlength="45">
         </div>
         <button type="submit" class="btn btn-default" style="display:inline-block">Submit</button>
       </form>
