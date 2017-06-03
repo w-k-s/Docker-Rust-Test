@@ -1,5 +1,6 @@
 
-
+use std::error;
+use std::fmt;
 use std::sync::Arc;
 
 use mysql;
@@ -14,6 +15,36 @@ pub struct UserService{
 	pool : Arc<Pool>
 }
 
+pub enum UserServiceError{
+	UsernameTaken,
+	UserNotFound,
+	InvalidLoginCredentials,
+	InternalError(String)
+}
+
+impl fmt::Display for UserServiceError{
+	fn fmt(&self, f: &mut fmt::Formatter)->fmt::Result{
+		write!(f,"{}",error::Error::description(self))
+	}
+}
+
+impl fmt::Debug for UserServiceError{
+	fn fmt(&self, f: &mut fmt::Formatter)->fmt::Result{
+		fmt::Display::fmt(self,f)
+	}
+}
+
+impl error::Error for UserServiceError{
+	fn description(&self)->&str{
+		match *self{
+			UserServiceError::UsernameTaken => "An account with this username already exists",
+			UserServiceError::UserNotFound => "An account with this username has not been registered",
+			UserServiceError::InvalidLoginCredentials => "Either the username or password is incorrect",
+			UserServiceError::InternalError(_) => "Internal Error",
+		}
+	}
+}
+
 impl UserService{
 
 	pub fn new(pool : Arc<Pool>)->UserService{
@@ -22,9 +53,9 @@ impl UserService{
 		}
 	}
 
-	pub fn register(&self, user: &User)->Result<bool,String>{
+	pub fn register(&self, user: &User)->Result<bool,UserServiceError>{
 		let mut stmt = self.pool.prepare(r"INSERT INTO users (username,password,first_name,last_name,email,is_active,is_staff)VALUES(:username,:password,:first_name,:last_name,:email,:is_active,:is_staff)").unwrap();
-	    let qr = stmt.execute(params!{
+	    return stmt.execute(params!{
 	        "username" => user.email.clone(),
 	        "password" => user.password.clone(),
 	        "first_name" => user.first_name.clone(),
@@ -34,18 +65,21 @@ impl UserService{
 	        "is_staff" => user.is_staff,
 	    }).map_err(|err|{
 	    	
-	    	let message = match err {
-                Error::MySqlError(my_err) => if my_err.code == 1062 { "Username already exists".to_owned() }else{ format!("{}",my_err) },
-                _ => format!("{}",err),
-            };
+	   		match err {
+                Error::MySqlError(ref my_err) => if my_err.code == 1062 { 
+                	UserServiceError::UsernameTaken 
+                }else{ 
+                	UserServiceError::InternalError(format!("{}",err)) 
+                },
+                _ => UserServiceError::InternalError(format!("{}",err)),
+            }
 
-            return message;
-	    }).unwrap();
-
-	    return Ok(qr.affected_rows() == 1 )
+	    }).map(|qr|{
+	    	qr.affected_rows() == 1
+	    });
 	}
 
-	pub fn login(&self, username: &str, password: &str)->Result<User,String>{
+	pub fn login(&self, username: &str, password: &str)->Result<User,UserServiceError>{
 		
 		let mut user = try!(self.find_user("username = :username",Params::from(params!{"username"=>username.to_owned()})));
 
@@ -56,11 +90,11 @@ impl UserService{
 			try!(self.generate_token(&mut user));
 			Ok(user)
 		}else{
-			Err("Username or password is incorrect".to_owned())
+			Err(UserServiceError::InvalidLoginCredentials)
 		}
 	}
 
-	fn generate_token(&self, user: &mut User)->Result<bool,String>{
+	fn generate_token(&self, user: &mut User)->Result<bool,UserServiceError>{
 		let mut payload = Payload::new();
 		payload.insert("uid".to_string(), user.id.to_string());
 		let header = Header::new(Algorithm::HS256);
@@ -72,24 +106,24 @@ impl UserService{
 			"token" => user.token.clone(),
 			"id" => user.id,
 		}).map_err(|err|{
-			return format!("{:?}",err);
+			return UserServiceError::InternalError(format!("{:?}",err));
 		}));
 
 		Ok(qr.affected_rows() == 1)
 	}
 
-	pub fn user_with_token(&self, token: &str)->Result<User,String>{
+	pub fn user_with_token(&self, token: &str)->Result<User,UserServiceError>{
 		self.find_user("token = :token",Params::from(params!{"token"=>token.to_owned()}))
 	}
 
-	fn find_user<>(&self, where_clause: &str, params : Params)->Result<User,String>{
+	fn find_user<>(&self, where_clause: &str, params : Params)->Result<User,UserServiceError>{
 		let query = format!(r"SELECT id,username,password, first_name,last_name,email,is_active,is_staff,token FROM users WHERE {}",where_clause);
 		let mut stmt = try!(self.pool.prepare(query).map_err(|err|{
-			return format!("{}",err)
+			return UserServiceError::InternalError(format!("{}",err));
 		}));
 
 		let mut qr = try!(stmt.execute(params).map_err(|err|{
-			return format!("{:?}",err);
+			return UserServiceError::InternalError(format!("{}",err));
 		}));
 	
 		if let Some(row_result) = qr.next(){
@@ -108,7 +142,7 @@ impl UserService{
 			
 			Ok(user)
 		}else{
-			Err("User not Found".to_owned())
+			Err(UserServiceError::UserNotFound)
 		}
 	}
 }

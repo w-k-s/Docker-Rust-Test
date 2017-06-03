@@ -1,7 +1,7 @@
 mod services;
 mod models;
-#[macro_use] extern crate nickel;
 #[macro_use] extern crate mysql;
+extern crate nickel;
 extern crate nickel_cookies;
 extern crate cookie;
 
@@ -13,7 +13,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use nickel::{Nickel, HttpRouter, StaticFilesHandler, Mount, Request, Response, MiddlewareResult,FormBody, Params};
 use mysql::{Pool};
-use cookie::{Cookie,CookieJar};
+use cookie::{Cookie};
 use nickel_cookies::Cookies;
 
 use models::user::{User};
@@ -53,10 +53,11 @@ fn main() {
     server.post("/login",login);
 
 	server.utilize(Mount::new("/static/",StaticFilesHandler::new("static/")));
-    server.listen(listen_addr);
+    let _ = server.listen(listen_addr);
+
 }
 
-fn index<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
+fn index<'a>(req: &mut Request<AppConfig>, res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
     
     #[derive(RustcEncodable)]
     struct ViewModel {
@@ -111,10 +112,10 @@ fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -
     let user_service = UserService::new(app_config.pool.clone());
     let success = match user_service.register(&user){
         Ok(success) => success,
-        Err(message) => {
+        Err(err) => {
             let data = ViewModel{
                 has_error: true,
-                error: message,
+                error: format!("{}",err),
             };
             return res.render("templates/index.tpl", &data);
         }
@@ -160,11 +161,11 @@ fn login<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> M
     let user_service = UserService::new(app_config.pool.clone());
     let user = match user_service.login(&username,&password){
         Ok(user) => user,
-        Err(message) => {
+        Err(err) => {
             let data = ViewModel{
                 signed_in: false,
                 has_error: true,
-                error: message,
+                error: format!("{}",err),
             };
             return res.render("templates/index.tpl", &data);
         }

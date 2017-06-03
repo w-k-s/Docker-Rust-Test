@@ -1,6 +1,6 @@
 Survey Website
 
-1. Index
+1. Login Page
 [-] CSS For Sign-up form
 [-] Sign-up
 [-] Implement Login
@@ -10,12 +10,18 @@ Survey Website
 [-] Verify token
 [-] CSS For login form
 [ ] Form Validation in JS
-[ ] UserServiceError
+[-] UserServiceError
 [-] CSS Front Page
 
-2. Test on Docker
-3. Use Command Line Arguments to supply environment variables
-4. Create Makefile to switch between local,docker,publish etc
+[2]. Test on Docker
+[3]. Create Makefile to switch between local,docker,publish etc
+[4]. Use Command Line Arguments to supply environment variables
+
+5. Home Page
+
+Features:
+- Create new survey
+- List of created surveys: (options: edit, share, results, delete)
 
 
 To run on docker:
