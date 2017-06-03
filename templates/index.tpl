@@ -25,7 +25,7 @@
 					},
 					password:{
 						required:true,
-						regex: "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$@$!%*?&.])[A-Za-z\d$@$!%*?&.]{6, 20}/"
+						passwordCheck: true
 					},
 					confirm_password:{
 						required: true,
@@ -53,7 +53,7 @@
 					},
 					password:{
 						required: "Please enter a password",
-						regex: "Your password must be between 6 and 20 characters long with atleast one uppercase letter, one lower case letter and a special character"
+						passwordCheck: "Your password must be between 6 and 20 characters long with atleast one uppercase letter, one lower case letter and a number"
 					},
 					confirm_password:{
 						required: "Re-enter your password",
@@ -63,6 +63,13 @@
 						required: 'You must agree to the terms and conditions'
 					}
 				}
+			});
+
+			$.validator.addMethod("passwordCheck",function(value, element){
+				return /^[A-Za-z0-9\d=!\-@._*]{6,20}$/.test(value) // consists of only these
+			       && /[a-z]/.test(value) // has a lowercase letter
+			       && /[A-Z]/.test(value)
+			       && /\d/.test(value); // has a digit
 			});
 		});
 	</script>
