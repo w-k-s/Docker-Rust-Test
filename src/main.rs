@@ -1,22 +1,19 @@
 mod services;
 mod models;
 #[macro_use] extern crate mysql;
-extern crate nickel;
-extern crate nickel_cookies;
-extern crate cookie;
-
-extern crate mustache;
+#[macro_use] extern crate nickel;
 extern crate rustc_serialize;
 extern crate frank_jwt;
 
 use std::sync::Arc;
 use std::collections::HashMap;
-use nickel::{Nickel, HttpRouter, StaticFilesHandler, Mount, Request, Response, MiddlewareResult,FormBody, Params};
+use nickel::status::StatusCode;
+use nickel::{Nickel, JsonBody, HttpRouter, StaticFilesHandler, Mount, Request, Response,Responder, MiddlewareResult};
 use mysql::{Pool};
-use cookie::{Cookie};
-use nickel_cookies::Cookies;
+use rustc_serialize::json::ToJson;
 
-use models::user::{User};
+use models::user::{Credentials, User};
+use models::response::{ApiResult};
 
 use services::user_service::{UserService};
 
@@ -48,34 +45,36 @@ fn main() {
     let listen_addr = config.listen_string();
     let mut server = Nickel::with_data(config);
 
-    server.get("/",index);
-    server.post("/register",register);
-    server.post("/login",login);
+    //server.post("/api/register",register);
+    server.post("/api/login",login);
+   
 
-	server.utilize(Mount::new("/static/",StaticFilesHandler::new("static/")));
+	server.utilize(Mount::new("/",StaticFilesHandler::new("static/")));
     let _ = server.listen(listen_addr);
 
 }
 
-fn index<'a>(req: &mut Request<AppConfig>, res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
-    
-    #[derive(RustcEncodable)]
-    struct ViewModel {
-        signed_in: bool,
-    }
+fn login<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
 
     let app_config =  req.server_data();
-    let user_service = UserService::new(app_config.pool.clone());
+    let creds = try_with!(res, {
+            req.json_as::<Credentials>().map_err(|e| (StatusCode::BadRequest, e))
+        });
 
-    let user = req.cookies().find("PrivateUserIdentity").map(|c| c.value).map(|token| user_service.user_with_token(&token));//(|c| c.value).and_then(|token| user_service.user_with_token(&token));
+    let user_service = UserService::new(app_config.pool.clone());
+    //let result : ApiResult<User> = try!(user_service.login(&creds.username,&creds.password)
+    //.map(|user| ApiResult::Ok(StatusCode::Ok,user))
+    //.map_err(|e| ApiResult::Err(StatusCode::BadRequest, format!("{}",e))));
     
-    let data = ViewModel{
-        signed_in: user.is_some(),
+    let fer : ApiResult<User> = match user_service.login(&creds.username,&creds.password){
+        Ok(user) => ApiResult{data: Some(user), error: None},
+        Err(err) => ApiResult{data: None, error: Some(format!("{}",err))},
     };
-    return res.render("templates/index.tpl", &data);
+
+    return res.send(fer);
 }
 
-fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
+/*fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
     //close connection after post request
     res.headers_mut().set_raw("Connection",vec![b"close".to_vec()]);
 
@@ -130,67 +129,6 @@ fn register<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -
     return res.render("templates/index.tpl", &data);    
 }
 
-fn login<'a>(req: &mut Request<AppConfig>, mut res: Response<'a,AppConfig>) -> MiddlewareResult<'a, AppConfig> {
-    //close connection after post request
-    res.headers_mut().set_raw("Connection",vec![b"close".to_vec()]);
-
-    #[derive(RustcEncodable)]
-    struct ViewModel {
-        signed_in: bool,
-        has_error: bool,
-        error: String,
-    }
-
-    let app_config =  req.server_data();
-    let params = req.form_body().unwrap();
-
-    let (username,password) : (String,String)= match get(params,vec!["username","password"]){
-        Ok(values) => (
-            (*values.get("username").unwrap()).to_owned(), 
-            (*values.get("password").unwrap()).to_owned()),
-        Err(missing) =>{
-            let data = ViewModel{
-                signed_in: false,
-                has_error: true,
-                error: format!("Missing: {:?}",missing),
-            };
-            return res.render("templates/index.tpl", &data);
-        }
-    };
-
-    let user_service = UserService::new(app_config.pool.clone());
-    let user = match user_service.login(&username,&password){
-        Ok(user) => user,
-        Err(err) => {
-            let data = ViewModel{
-                signed_in: false,
-                has_error: true,
-                error: format!("{}",err),
-            };
-            return res.render("templates/index.tpl", &data);
-        }
-    };
-
-    //let cookies = vec!(format!("c_user={}",user.token.unwrap()).as_bytes().to_vec());
-    //res.headers_mut().set_raw("Set-Cookie",cookies);
-    {
-        let jar = res.cookies_mut().permanent();
-        let token = user.token.unwrap();
-        let cookie = Cookie::new("PrivateUserIdentity".to_owned(),
-                                 token);
-        jar.add(cookie);
-    }
-        
-
-    let data = ViewModel {
-        signed_in: true,
-        has_error: true,
-        error: format!("Signed in as {} {}",user.first_name,user.last_name),
-    };
-    
-    return res.render("templates/index.tpl", &data);    
-}
-
 fn get<'a>(p : &'a Params, keys: Vec<&'a str>)->Result<HashMap<&'a str,&'a str>,Vec<&'a str>>{
     
     let mut provided_values : HashMap<&str,&str> = HashMap::new();
@@ -209,4 +147,4 @@ fn get<'a>(p : &'a Params, keys: Vec<&'a str>)->Result<HashMap<&'a str,&'a str>,
     }
 
     if missing { Err(missing_keys) }else{ Ok(provided_values) }
-}
+}*/
