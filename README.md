@@ -1,30 +1,32 @@
-Survey Website
+# Survey Website
 
-1. Login Page
-[-] CSS For Sign-up form
-[-] Sign-up
-[-] Implement Login
-[-] Generate JWT Token
-[-] Assign Login Token to User in DB
-[-] Set Token in cookie
-[-] Verify token
-[-] CSS For login form
-[-] Form Validation in JS
-[-] UserServiceError
-[-] CSS Front Page
+### 1. Login Page
 
-[2]. Test on Docker
-[3]. Create Makefile to switch between local,docker,publish etc
-4. Use Command Line Arguments to supply environment variables
+- [x] CSS For Sign-up form
+- [x] Sign-up
+- [x] Implement Login
+- [x] Generate JWT Token
+- [x] Assign Login Token to User in DB
+- [x] Set Token in cookie
+- [x] Verify token
+- [x] CSS For login form
+- [x] Form Validation in JS
+- [x] UserServiceError
+- [x] CSS Front Page
 
-5. Home Page
+### 2. Hosting
 
-Features:
-- Create new survey
-- List of created surveys: (options: edit, share, results, delete)
+- [x] Test on Docker
+- [x] Create Makefile to switch between local,docker,publish etc
+- [x] Use Command Line Arguments to supply environment variables
+
+### 3. To Do
+
+- [ ] Create new survey
+- [ ] List of created surveys: (options: edit, share, results, delete)
 
 
-To run on docker:
+### To run on docker:
 
 ```
 docker build -t wks/rust-test .
